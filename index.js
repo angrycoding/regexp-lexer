@@ -1,11 +1,17 @@
-var T_EOF = -1, T_ERROR = -2, T_TOKEN = -3,
+var T_EOF = -1,
+	T_ERROR = -2,
+	T_TOKEN = -3,
+	PROP_PREFIX = '$PROP_',
 	REGEXP_ESCAPE = /([.?*+^$[\]\\(){}|-])/g;
 
 function escapeExpression(expression) {
 	if (expression instanceof RegExp) {
 		expression = expression.toString();
 		expression = expression.slice(1, -1);
-	} else expression = expression.replace(REGEXP_ESCAPE, '\\$1');
+	}
+
+	else expression = expression.replace(REGEXP_ESCAPE, '\\$1');
+
 	return '(' + expression + ')';
 }
 
@@ -20,17 +26,23 @@ function TokenSet() {
  * @param {string|RegExp} expression
  */
 TokenSet.prototype.add = function(name, expression) {
-	this.names.push(typeof name === 'undefined' ? T_TOKEN : name);
-	this.exprs.push(escapeExpression(expression));
+	if (arguments.length === 1) {
+		this.names.push(T_TOKEN);
+		this.exprs.push(escapeExpression(name));
+	} else {
+		this.names.push(typeof name === 'undefined' ? T_TOKEN : name);
+		this.exprs.push(escapeExpression(expression));
+	}
 };
 
 TokenSet.prototype.tokenize = function(inputStr) {
-	return new Tokenizer(inputStr, this.names, new RegExp(this.exprs.join('|'), 'g'));
+	var ignoredTokens = Array.prototype.slice.call(arguments, 1);
+	return new Tokenizer(inputStr, this.names, new RegExp(this.exprs.join('|'), 'g'), ignoredTokens);
 };
 
 
 function compareToken(token, selector) {
-	var c, fragment, type = token.type;
+	var c, fragment, type = (token.type || token);
 	if (!(selector instanceof Array)) selector = [selector];
 	for (c = 0; c < selector.length; c++) {
 		fragment = selector[c];
@@ -39,13 +51,13 @@ function compareToken(token, selector) {
 }
 
 /** @constructor */
-function Tokenizer(inputStr, tokenIds, regexp) {
+function Tokenizer(inputStr, tokenIds, regexp, ignoredTokens) {
 	this.buffer = [];
 	this.inputStr = inputStr;
 	this.regexp = regexp;
 	this.tokenIds = tokenIds;
 	this.inputLen = inputStr.length;
-	this.ignoredTokens = null;
+	this.ignoredTokens = (ignoredTokens.length ? ignoredTokens : null);
 }
 
 Tokenizer.prototype.$EOF = T_EOF;
@@ -57,6 +69,25 @@ Tokenizer.prototype.setIgnored = function() {
 	function Tokenizer() { this.ignoredTokens = ignoredTokens; }
 	Tokenizer.prototype = this;
 	return new Tokenizer();
+};
+
+Tokenizer.prototype.instance = function() {
+	function Tokenizer() {}
+	Tokenizer.prototype = this;
+	return new Tokenizer();
+};
+
+Tokenizer.prototype.has = function(name) {
+	return (PROP_PREFIX + String(name)) in this;
+};
+
+Tokenizer.prototype.get = function(name) {
+	return this[PROP_PREFIX + String(name)];
+};
+
+Tokenizer.prototype.set = function(name, value) {
+	this[PROP_PREFIX + String(name)] = (arguments.length > 1 ? value : true);
+	return this;
 };
 
 Tokenizer.prototype.readTokenToBuffer = function() {
@@ -155,6 +186,34 @@ Tokenizer.prototype.getSpecificToken = function(selector, consume) {
 
 	return (x.length === 1 ? x[0] : x);
 };
+
+
+
+
+
+Tokenizer.prototype.getOffset = function() {
+	var buffer = this.buffer;
+	return (buffer.length ? buffer[0].pos : this.regexp.lastIndex);
+};
+
+Tokenizer.prototype.getCharFromBufferAbs = function(startPos) {
+	return (startPos >= this.inputLen ? T_EOF : this.inputStr[startPos]);
+};
+
+Tokenizer.prototype.adjustOffsetAbs = function(startPos) {
+	var checkIndex = this.inputLen;
+	this.buffer.splice(0, Infinity);
+	this.regexp.lastIndex = (
+		startPos >= checkIndex ?
+		checkIndex : startPos
+	);
+};
+
+Tokenizer.prototype.nextChar = function() {
+	var offset = this.getOffset(), result = this.getCharFromBufferAbs(offset);
+	return this.adjustOffsetAbs(offset + 1), result;
+};
+
 
 Tokenizer.prototype.next = function() {
 	return (
