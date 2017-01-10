@@ -1,6 +1,7 @@
 {
 	"name": "regexp-lexer",
-	"version": "0.0.2",
+	"version": "0.0.3",
+	"files": ["index.js"],
 	"description": "RegExp based lexer",
 	"keywords": ["regexp", "lexer", "scanner", "tokenizer", "parsing", "parser"],
 	"author": "angrycoding <matveev.ruslan@gmail.com>",
