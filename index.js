@@ -196,22 +196,22 @@ Tokenizer.prototype.getOffset = function() {
 	return (buffer.length ? buffer[0].pos : this.regexp.lastIndex);
 };
 
-Tokenizer.prototype.getCharFromBufferAbs = function(startPos) {
-	return (startPos >= this.inputLen ? T_EOF : this.inputStr[startPos]);
+Tokenizer.prototype.getCharFromBuffer = function(offset) {
+	return (offset >= this.inputLen ? T_EOF : this.inputStr[offset]);
 };
 
-Tokenizer.prototype.adjustOffsetAbs = function(startPos) {
+Tokenizer.prototype.setOffset = function(offset) {
 	var checkIndex = this.inputLen;
 	this.buffer.splice(0, Infinity);
 	this.regexp.lastIndex = (
-		startPos >= checkIndex ?
-		checkIndex : startPos
+		offset >= checkIndex ?
+		checkIndex : offset
 	);
 };
 
 Tokenizer.prototype.nextChar = function() {
-	var offset = this.getOffset(), result = this.getCharFromBufferAbs(offset);
-	return this.adjustOffsetAbs(offset + 1), result;
+	var offset = this.getOffset(), result = this.getCharFromBuffer(offset);
+	return this.setOffset(offset + 1), result;
 };
 
 
