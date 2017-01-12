@@ -1,6 +1,5 @@
 var T_EOF = -1,
 	T_ERROR = -2,
-	T_TOKEN = -3,
 	PROP_PREFIX = '$PROP_',
 	REGEXP_ESCAPE = /([.?*+^$[\]\\(){}|-])/g;
 
@@ -15,32 +14,25 @@ function escapeExpression(expression) {
 	return '(' + expression + ')';
 }
 
-/** @constructor */
 function TokenSet() {
-	this.names = [];
-	this.exprs = [];
-}
 
-/**
- * @param {number|Array<number>} name
- * @param {string|RegExp} expression
- */
-TokenSet.prototype.add = function(name, expression) {
-	if (arguments.length === 1) {
-		this.names.push(T_TOKEN);
-		this.exprs.push(escapeExpression(name));
-	} else {
-		this.names.push(typeof name === 'undefined' ? T_TOKEN : name);
-		this.exprs.push(escapeExpression(expression));
+	var exprs = [], names = [];
+
+	for (var c = 0; c < arguments.length; c += 2) {
+		names.push(arguments[c]);
+		exprs.push(escapeExpression(arguments[c + 1]));
 	}
-	return this;
-};
 
-TokenSet.prototype.tokenize = function(inputStr) {
-	var ignoredTokens = Array.prototype.slice.call(arguments, 1);
-	return new Tokenizer(inputStr, this.names, new RegExp(this.exprs.join('|'), 'g'), ignoredTokens);
-};
+	exprs = exprs.join('|');
 
+
+	return function(inputStr) {
+		var ignoredTokens = Array.prototype.slice.call(arguments, 1);
+		return new Tokenizer(inputStr, names, new RegExp(exprs, 'g'), ignoredTokens);
+	};
+
+
+}
 
 function compareToken(token, selector) {
 	var c, fragment, type = (token.type || token);
