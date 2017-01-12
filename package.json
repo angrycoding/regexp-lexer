@@ -1,13 +1,22 @@
 {
-	"name": "regexp-lexer",
-	"version": "0.0.4",
-	"files": ["index.js"],
-	"description": "RegExp based lexer",
-	"keywords": ["regexp", "lexer", "scanner", "tokenizer", "parsing", "parser"],
-	"author": "angrycoding <matveev.ruslan@gmail.com>",
-	"license": "Apache-2.0",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/angrycoding/regexp-lexer.git"
-	}
+  "name": "regexp-lexer",
+  "version": "0.0.5",
+  "files": [
+    "index.js"
+  ],
+  "description": "RegExp based lexer",
+  "keywords": [
+    "regexp",
+    "lexer",
+    "scanner",
+    "tokenizer",
+    "parsing",
+    "parser"
+  ],
+  "author": "angrycoding <matveev.ruslan@gmail.com>",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/angrycoding/regexp-lexer.git"
+  }
 }
