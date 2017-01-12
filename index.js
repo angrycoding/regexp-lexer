@@ -14,26 +14,6 @@ function escapeExpression(expression) {
 	return '(' + expression + ')';
 }
 
-function TokenSet() {
-
-	var exprs = [], names = [];
-
-	for (var c = 0; c < arguments.length; c += 2) {
-		names.push(arguments[c]);
-		exprs.push(escapeExpression(arguments[c + 1]));
-	}
-
-	exprs = exprs.join('|');
-
-
-	return function(inputStr) {
-		var ignoredTokens = Array.prototype.slice.call(arguments, 1);
-		return new Tokenizer(inputStr, names, new RegExp(exprs, 'g'), ignoredTokens);
-	};
-
-
-}
-
 function compareToken(token, selector) {
 	var c, fragment, type = (token.type || token);
 	if (!(selector instanceof Array)) selector = [selector];
@@ -44,14 +24,32 @@ function compareToken(token, selector) {
 }
 
 /** @constructor */
-function Tokenizer(inputStr, tokenIds, regexp, ignoredTokens) {
+function Tokenizer() {
+
 	this.buffer = [];
+	this.inputStr = '';
+	this.inputLen = 0;
+	this.ignoredTokens = null;
+
+	var exprs = [], tokenIds = this.tokenIds = [];
+
+	for (var c = 0; c < arguments.length; c += 2) {
+		tokenIds.push(arguments[c]);
+		exprs.push(escapeExpression(arguments[c + 1]));
+	}
+
+	this.regexp = new RegExp(exprs.join('|'), 'g');
+}
+
+Tokenizer.prototype.init = function(inputStr) {
+	var ignoredTokens = Array.prototype.slice.call(arguments, 1);
+	this.regexp.lastIndex = 0;
+	this.buffer.splice(0, Infinity);
 	this.inputStr = inputStr;
-	this.regexp = regexp;
-	this.tokenIds = tokenIds;
 	this.inputLen = inputStr.length;
 	this.ignoredTokens = (ignoredTokens.length ? ignoredTokens : null);
-}
+	return this;
+};
 
 Tokenizer.prototype.$EOF = T_EOF;
 
@@ -240,4 +238,4 @@ Tokenizer.prototype.getLineNumber = function(tokenPos) {
 
 };
 
-module.exports = TokenSet;
+module.exports = Tokenizer;
