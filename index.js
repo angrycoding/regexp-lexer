@@ -33,6 +33,7 @@ TokenSet.prototype.add = function(name, expression) {
 		this.names.push(typeof name === 'undefined' ? T_TOKEN : name);
 		this.exprs.push(escapeExpression(expression));
 	}
+	return this;
 };
 
 TokenSet.prototype.tokenize = function(inputStr) {
