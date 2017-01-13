@@ -207,7 +207,7 @@ Tokenizer.prototype.nextChar = function() {
 };
 
 
-Tokenizer.prototype.next = function() {
+Tokenizer.prototype.nextToken = function() {
 	return (
 		arguments.length ?
 		this.getSpecificToken(arguments, true) :
@@ -215,7 +215,7 @@ Tokenizer.prototype.next = function() {
 	);
 };
 
-Tokenizer.prototype.test = function() {
+Tokenizer.prototype.testToken = function() {
 	return (
 		arguments.length ?
 		this.getSpecificToken(arguments, false) :
@@ -223,10 +223,11 @@ Tokenizer.prototype.test = function() {
 	);
 };
 
-Tokenizer.prototype.getLineNumber = function(tokenPos) {
+Tokenizer.prototype.getCurrentLineNumber = function() {
 
 	var code, pos = -1, lineNumber = 1,
-		inputStr = this.inputStr;
+		inputStr = this.inputStr,
+		tokenPos = this.getOffset();
 
 	while (++pos < tokenPos) {
 		code = inputStr.charCodeAt(pos);
