@@ -199,6 +199,7 @@ Tokenizer.prototype.setOffset = function(offset) {
 		offset >= checkIndex ?
 		checkIndex : offset
 	);
+	return this;
 };
 
 Tokenizer.prototype.nextChar = function() {
