@@ -4,18 +4,15 @@ var T_EOF = -1,
 	REGEXP_ESCAPE = /([.?*+^$[\]\\(){}|-])/g;
 
 function escapeExpression(expression) {
-	if (expression instanceof RegExp) {
-		expression = expression.toString();
-		expression = expression.slice(1, -1);
-	}
-
-	else expression = expression.replace(REGEXP_ESCAPE, '\\$1');
-
-	return '(' + expression + ')';
+	return '(' + (
+		expression instanceof RegExp ?
+		expression.toString().split('/').slice(1, -1).join('/') :
+		String(expression).replace(REGEXP_ESCAPE, '\\$1')
+	) + ')';
 }
 
 function compareToken(token, selector) {
-	var c, fragment, type = (token.type || token);
+	var c, fragment, type = token.type;
 	if (!(selector instanceof Array)) selector = [selector];
 	for (c = 0; c < selector.length; c++) {
 		fragment = selector[c];
@@ -54,13 +51,33 @@ Tokenizer.prototype.init = function(inputStr) {
 Tokenizer.prototype.$EOF = T_EOF;
 
 Tokenizer.prototype.setIgnored = function() {
-	var ignoredTokens = Array.prototype.slice.call(arguments);
-	if (!ignoredTokens.length) ignoredTokens = null;
-	if (this.ignoredTokens === ignoredTokens) return this;
-	function Tokenizer() { this.ignoredTokens = ignoredTokens; }
+
+	var oldIgnoredTokens = this.ignoredTokens,
+		newIgnoredTokens = Array.prototype.slice.call(arguments);
+
+	if (newIgnoredTokens.length) {
+		newIgnoredTokens = newIgnoredTokens.sort();
+		if (oldIgnoredTokens && String(oldIgnoredTokens) === String(newIgnoredTokens)) {
+			return this;
+		}
+	}
+
+	else {
+		if (oldIgnoredTokens === null) return this;
+		newIgnoredTokens = null;
+	}
+
+	function Tokenizer() { this.ignoredTokens = newIgnoredTokens; }
 	Tokenizer.prototype = this;
 	return new Tokenizer();
 };
+
+Tokenizer.prototype.isIgnored = function(token) {
+	var ignoredTokens = this.ignoredTokens;
+	return (ignoredTokens && compareToken(token, ignoredTokens));
+};
+
+
 
 Tokenizer.prototype.instance = function() {
 	function Tokenizer() {}
@@ -80,6 +97,7 @@ Tokenizer.prototype.set = function(name, value) {
 	this[PROP_PREFIX + String(name)] = (arguments.length > 1 ? value : true);
 	return this;
 };
+
 
 Tokenizer.prototype.readTokenToBuffer = function() {
 
@@ -117,37 +135,22 @@ Tokenizer.prototype.readTokenToBuffer = function() {
 	// return T_ERROR token in case if we couldn't match anything
 	else (regexp.lastIndex = checkIndex, buffer.push({
 		type: T_ERROR, pos: startPos,
-		value: this.inputStr.slice(startPos)
+		value: matchStr.slice(startPos)
 	}));
-
 };
 
 Tokenizer.prototype.getTokenFromBuffer = function(offset) {
-
-	var token, buffer = this.buffer,
-		ignoredTokens = this.ignoredTokens,
-		toRead = offset - buffer.length + 1;
-
-
+	var buffer = this.buffer, toRead = offset - buffer.length + 1;
 	while (toRead-- > 0) this.readTokenToBuffer();
-
-	token = buffer[offset];
-
-	return (ignoredTokens && compareToken(token, ignoredTokens) ? {
-		type: token.type,
-		pos: token.pos,
-		value: token.value,
-		ignored: true
-	} : token);
-
+	return buffer[offset];
 };
 
 
 
 Tokenizer.prototype.getAnyToken = function(consume) {
 	var token, offset = 0, buffer = this.buffer;
-	if (consume) while (token = this.getTokenFromBuffer(0), buffer.shift(), token.ignored);
-	else while (token = this.getTokenFromBuffer(offset++), token.ignored);
+	if (consume) while (token = this.getTokenFromBuffer(0), buffer.shift(), this.isIgnored(token));
+	else while (token = this.getTokenFromBuffer(offset++), this.isIgnored(token));
 	return token;
 };
 
@@ -166,11 +169,9 @@ Tokenizer.prototype.getSpecificToken = function(selector, consume) {
 		if (++index >= length) break;
 	}
 
-	else if (!token.ignored) return;
+	else if (!this.isIgnored(token)) return;
 
 	if (!consume) return true;
-
-
 
 	var buffer = this.buffer;
 	while (offset--) buffer.shift();
